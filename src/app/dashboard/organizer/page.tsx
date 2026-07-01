@@ -127,7 +127,7 @@ const WAITING: WaitingItem[] = [
 const TODOS: TodoItem[] = [
   { topic: "Mazowsze Pakiet Promocyjny", action: "Przygotować wniosek 30k zł (po spotkaniu Prokurat 29.06)", status: "⏳ Do złożenia przed 5.08" },
   { topic: "Szymon UZ-M — zaległość PIT ~17k", action: "Wniosek art. 67a §1 pkt 3 Op do US Siedlce", status: "🔴 PILNE" },
-  { topic: "Wizyty u dyrektorów szkół", action: "Strzała, Żelków, Stok Lacki, Iganie — PSL-GS_Program_Nauczania", status: "⏳ Lipiec 2026" },
+  { topic: "Wizyty u dyrektorów szkół", action: "Strzała, Żelków, Stok Lacki, Iganie — PSL-GS_Program_Nauczania", status: "🔄 W toku od 02.07.2026" },
   { topic: "Mail Erasmus+ po francusku", action: "Do Nancy HC lub Dijon HC (przez Nikolę)", status: "⏳ Lipiec/Sierpień" },
   { topic: "Wizyta Kurzawy (gł. trener PZHL)", action: "Umówić termin wizyty w Siedlcach", status: "⏳ Do umówienia" },
   { topic: "Materiały metodyczne dla Grutha (PZHL)", action: "Wysłać dokumenty SWH / program szkoleniowy", status: "⏳ Do wysłania" },
