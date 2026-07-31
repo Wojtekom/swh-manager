@@ -30,10 +30,13 @@ export async function sendSms(
   const params = new URLSearchParams({
     to: normalizedPhone,
     message,
-    from: "SWH",
     format: "json",
     encoding: "utf-8",
   });
+
+  // Dodaj nadawcę tylko jeśli jest zarejestrowany w SMSAPI
+  // Po rejestracji nazwy "SWH" odkomentować poniższą linię:
+  // params.set("from", "SWH");
 
   const res = await fetch(
     `https://api.smsapi.pl/sms.do?${params.toString()}`,

@@ -49,6 +49,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/karta-rozwoju", label: "Karty Rozwoju", icon: ClipboardList, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/test-rolkarza", label: "Test Rolkarza", icon: Timer, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/dziennik-pzsw", label: "Dziennik PZSW", icon: FileText, roles: ["ADMIN", "COACH"] },
+  { href: "/dashboard/dziennik-swd", label: "Dziennik SWD", icon: FileText, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/notifications", label: "Powiadomienia", icon: Bell, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/calendar", label: "Kalendarz", icon: CalendarDays, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/equipment", label: "Sprzęt", icon: Package, roles: ["ADMIN", "COACH"] },
