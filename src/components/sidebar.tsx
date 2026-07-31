@@ -28,6 +28,7 @@ import {
   Bell,
   Timer,
   FileText,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/announcements", label: "Ogłoszenia", icon: Megaphone, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/messages", label: "Wiadomości", icon: MessageCircle, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/tournaments", label: "Turnieje", icon: Trophy, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
-  { href: "/dashboard/camps", label: "Obozy", icon: Tent, roles: ["ADMIN", "COACH", "PLAYER"] },
+  { href: "/dashboard/camps", label: "Obozy", icon: Tent, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/wyjazdy", label: "Wyjazdy", icon: Bus, roles: ["PARENT"] },
   { href: "/dashboard/training", label: "Szkolenie", icon: BookOpen, roles: ["ADMIN", "COACH", "PARENT"] },
   { href: "/dashboard/karta-rozwoju", label: "Karty Rozwoju", icon: ClipboardList, roles: ["ADMIN", "COACH"] },
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/dziennik-swd", label: "Dziennik SWD", icon: FileText, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/notifications", label: "Powiadomienia", icon: Bell, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/calendar", label: "Kalendarz", icon: CalendarDays, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
+  { href: "/dashboard/organizer", label: "Organizer", icon: ListTodo, roles: ["ADMIN"] },
   { href: "/dashboard/equipment", label: "Sprzęt", icon: Package, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/shop", label: "Sklep sprzętu", icon: Package, roles: ["PARENT"] },
   { href: "/dashboard/my-orders", label: "Moje zamówienia", icon: ClipboardList, roles: ["PARENT"] },
