@@ -4,13 +4,13 @@ import { getSessionOrError, requireRole } from "@/lib/auth-helpers";
 
 const CATEGORIES = [
   { key: "ROLKI",   icon: "🛼", label: "Jazda na rolkach" },
-  { key: "ŁYŻWY",  icon: "⛸",  label: "Jazda na łyżwach" },
-  { key: "KRĄŻEK",  icon: "🏒", label: "Technika prowadzenia krążka" },
+  { key: "LYZWY",   icon: "⛸",  label: "Jazda na łyżwach" },
+  { key: "KRAZEK",  icon: "🏒", label: "Technika prowadzenia krążka" },
   { key: "PODANIA", icon: "↔",  label: "Technika podania i przyjęcia" },
-  { key: "STRZAŁY", icon: "🎯", label: "Technika strzału" },
+  { key: "STRZALY", icon: "🎯", label: "Technika strzału" },
   { key: "OBRONA",  icon: "🛡",  label: "Taktyka — obrona" },
   { key: "ATAK",    icon: "⚡", label: "Taktyka — atak" },
-  { key: "CIAŁO",   icon: "💪", label: "Gra ciałem" },
+  { key: "CIALO",   icon: "💪", label: "Gra ciałem" },
 ];
 
 export async function GET(
