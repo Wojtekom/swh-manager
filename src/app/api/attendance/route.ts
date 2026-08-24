@@ -81,5 +81,11 @@ export async function POST(req: NextRequest) {
     )
   );
 
-  return NextResponse.json({ saved: results.length });
+  const presentCount = parsed.data.records.filter((r) => r.present).length;
+
+  return NextResponse.json({
+    saved: results.length,
+    present: presentCount,
+    absent: results.length - presentCount,
+  });
 }

@@ -138,7 +138,9 @@ export default function AttendancePage() {
       });
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Zapisano obecność (${data.saved} zawodników)`);
+        toast.success(
+          `Zapisano obecność: ${data.present} obecnych, ${data.absent} nieobecnych`
+        );
       } else {
         toast.error("Błąd zapisu");
       }
