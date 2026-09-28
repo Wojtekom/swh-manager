@@ -29,6 +29,7 @@ import {
   Timer,
   FileText,
   ListTodo,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/players", label: "Zawodnicy", icon: Users, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/groups", label: "Grupy", icon: UsersRound, roles: ["ADMIN", "COACH"] },
+  { href: "/dashboard/kadra", label: "Kadra szkoleniowa", icon: GraduationCap, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/payments", label: "Składki", icon: CreditCard, roles: ["ADMIN", "PARENT"] },
   { href: "/dashboard/schedule", label: "Harmonogram", icon: Calendar, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/attendance", label: "Obecności", icon: ClipboardList, roles: ["ADMIN", "COACH"] },
