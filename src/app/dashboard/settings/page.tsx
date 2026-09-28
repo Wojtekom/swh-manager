@@ -52,6 +52,7 @@ interface UserData {
   role: string;
   active: boolean;
   createdAt: string;
+  coach?: { specialization: string | null; licenseNum: string | null } | null;
 }
 
 const ROLES: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof Shield }> = {
@@ -88,6 +89,8 @@ export default function SettingsPage() {
   const [formPhone, setFormPhone] = useState("");
   const [formRole, setFormRole] = useState("PARENT");
   const [formPassword, setFormPassword] = useState("");
+  const [formSpecialization, setFormSpecialization] = useState("");
+  const [formLicenseNum, setFormLicenseNum] = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
   // --- Aktywacja zaimportowanych rodzicow ---
@@ -245,6 +248,8 @@ export default function SettingsPage() {
     setFormPhone("");
     setFormRole("PARENT");
     setFormPassword("");
+    setFormSpecialization("");
+    setFormLicenseNum("");
     setUserDialogOpen(true);
   };
 
@@ -255,6 +260,8 @@ export default function SettingsPage() {
     setFormPhone(user.phone || "");
     setFormRole(user.role);
     setFormPassword("");
+    setFormSpecialization(user.coach?.specialization || "");
+    setFormLicenseNum(user.coach?.licenseNum || "");
     setUserDialogOpen(true);
   };
 
@@ -269,6 +276,10 @@ export default function SettingsPage() {
           role: formRole,
         };
         if (formPassword) body.password = formPassword;
+        if (formRole === "COACH") {
+          body.specialization = formSpecialization;
+          body.licenseNum = formLicenseNum;
+        }
 
         const res = await fetch(`/api/users/${editingUser.id}`, {
           method: "PATCH",
@@ -299,6 +310,10 @@ export default function SettingsPage() {
             phone: formPhone,
             role: formRole,
             password: formPassword,
+            ...(formRole === "COACH" && {
+              specialization: formSpecialization,
+              licenseNum: formLicenseNum,
+            }),
           }),
         });
         if (res.ok) {
@@ -623,6 +638,26 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
             </div>
+            {formRole === "COACH" && (
+              <>
+                <div>
+                  <Label>Specjalizacja</Label>
+                  <Input
+                    value={formSpecialization}
+                    onChange={(e) => setFormSpecialization(e.target.value)}
+                    placeholder="np. przygotowanie motoryczne"
+                  />
+                </div>
+                <div>
+                  <Label>Numer licencji trenerskiej</Label>
+                  <Input
+                    value={formLicenseNum}
+                    onChange={(e) => setFormLicenseNum(e.target.value)}
+                    placeholder="np. PZHL/2026/123"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <Label>{editingUser ? "Nowe haslo (pozostaw puste aby nie zmieniac)" : "Haslo"}</Label>
               <Input

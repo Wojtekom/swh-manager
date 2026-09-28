@@ -10,6 +10,8 @@ const createUserSchema = z.object({
   name: z.string().min(2, "Imię min. 2 znaki"),
   phone: z.string().optional(),
   role: z.enum(["ADMIN", "COACH", "PARENT", "PLAYER"]),
+  specialization: z.string().optional(),
+  licenseNum: z.string().optional(),
 });
 
 // GET /api/users — lista użytkowników (admin only)
@@ -29,6 +31,7 @@ export async function GET() {
       role: true,
       active: true,
       createdAt: true,
+      coach: { select: { specialization: true, licenseNum: true } },
     },
     orderBy: { name: "asc" },
   });
@@ -73,6 +76,16 @@ export async function POST(req: NextRequest) {
       role: true,
     },
   });
+
+  if (parsed.data.role === "COACH" && (parsed.data.specialization || parsed.data.licenseNum)) {
+    await prisma.coach.create({
+      data: {
+        userId: user.id,
+        specialization: parsed.data.specialization || null,
+        licenseNum: parsed.data.licenseNum || null,
+      },
+    });
+  }
 
   return NextResponse.json(user, { status: 201 });
 }

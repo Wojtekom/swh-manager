@@ -10,6 +10,8 @@ const updateUserSchema = z.object({
   role: z.enum(["ADMIN", "COACH", "PARENT", "PLAYER"]).optional(),
   active: z.boolean().optional(),
   password: z.string().min(6, "Haslo min. 6 znakow").optional(),
+  specialization: z.string().optional(),
+  licenseNum: z.string().optional(),
 });
 
 // GET /api/users/[id] — szczegoly uzytkownika
@@ -38,6 +40,7 @@ export async function GET(
       role: true,
       active: true,
       createdAt: true,
+      coach: { select: { specialization: true, licenseNum: true } },
     },
   });
 
@@ -101,6 +104,25 @@ export async function PATCH(
       active: true,
     },
   });
+
+  const finalRole = parsed.data.role ?? user.role;
+  if (
+    finalRole === "COACH" &&
+    (parsed.data.specialization !== undefined || parsed.data.licenseNum !== undefined)
+  ) {
+    await prisma.coach.upsert({
+      where: { userId: id },
+      create: {
+        userId: id,
+        specialization: parsed.data.specialization || null,
+        licenseNum: parsed.data.licenseNum || null,
+      },
+      update: {
+        ...(parsed.data.specialization !== undefined && { specialization: parsed.data.specialization || null }),
+        ...(parsed.data.licenseNum !== undefined && { licenseNum: parsed.data.licenseNum || null }),
+      },
+    });
+  }
 
   return NextResponse.json(user);
 }
