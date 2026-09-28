@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma";
 
 // POST /api/seed — tworzy konto admina jesli nie istnieje
 export async function POST(req: NextRequest) {
-  // Zabezpieczenie: wymaga SEED_SECRET w produkcji
+  // Zabezpieczenie: wymaga skonfigurowanego SEED_SECRET — bez niego endpoint jest zablokowany
   const seedSecret = process.env.SEED_SECRET;
-  if (seedSecret) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${seedSecret}`) {
-      return NextResponse.json({ error: "Brak autoryzacji seed" }, { status: 403 });
-    }
+  if (!seedSecret) {
+    return NextResponse.json({ error: "Endpoint wylaczony (brak SEED_SECRET)" }, { status: 403 });
+  }
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${seedSecret}`) {
+    return NextResponse.json({ error: "Brak autoryzacji seed" }, { status: 403 });
   }
 
   const adminEmail = "admin@swh.pl";

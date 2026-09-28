@@ -99,12 +99,6 @@ export default function LoginPage() {
               {loading ? "Logowanie..." : "Zaloguj sie"}
             </Button>
           </form>
-
-          <div className="mt-6 pt-4 border-t border-sky-100">
-            <p className="text-xs text-center text-muted-foreground">
-              Domyslne konto: <strong>admin@swh.pl</strong> / <strong>Admin123!</strong>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
