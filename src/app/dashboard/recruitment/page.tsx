@@ -56,6 +56,20 @@ interface Recruitment {
   createdAt: string;
 }
 
+interface Group {
+  id: string;
+  name: string;
+}
+
+interface AcceptResult {
+  playerName: string;
+  playerCreated: boolean;
+  parentCreated: boolean;
+  parentEmail: string;
+  emailSent: boolean;
+  tempPassword?: string;
+}
+
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   NEW: { label: "Nowe", variant: "default" },
   CONTACTED: { label: "Skontaktowano", variant: "secondary" },
@@ -74,6 +88,24 @@ export default function RecruitmentAdminPage() {
   const [detailItem, setDetailItem] = useState<Recruitment | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [sendInvite, setSendInvite] = useState(true);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptResult, setAcceptResult] = useState<AcceptResult | null>(null);
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  const fetchGroups = useCallback(async () => {
+    try {
+      const res = await fetch("/api/groups");
+      if (res.ok) {
+        const data: Group[] = await res.json();
+        setGroups(data.map((g) => ({ id: g.id, name: g.name })));
+      }
+    } catch {
+      // brak grup nie blokuje przyjęcia
+    }
+  }, []);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -88,8 +120,11 @@ export default function RecruitmentAdminPage() {
 
   useEffect(() => {
     if (authStatus === "unauthenticated") router.push("/login");
-    if (authStatus === "authenticated") fetchItems();
-  }, [authStatus, router, fetchItems]);
+    if (authStatus === "authenticated") {
+      fetchItems();
+      fetchGroups();
+    }
+  }, [authStatus, router, fetchItems, fetchGroups]);
 
   const filtered = items.filter((r) => {
     const matchSearch = `${r.childFirstName} ${r.childLastName} ${r.parentName}`
@@ -104,21 +139,74 @@ export default function RecruitmentAdminPage() {
     setDetailItem(item);
     setEditNotes(item.adminNotes || "");
     setEditStatus(item.status);
+    setSelectedGroups([]);
+    setSendInvite(true);
+  }
+
+  function toggleGroup(id: string) {
+    setSelectedGroups((prev) =>
+      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
+    );
+  }
+
+  // Przyjęcie: zawodnik + grupy + konto rodzica + powiązanie + zaproszenie
+  async function acceptRecruitment(item: Recruitment) {
+    setAccepting(true);
+    try {
+      const res = await fetch(`/api/recruitment/${item.id}/accept`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupIds: selectedGroups, sendInvite }),
+      });
+      if (!res.ok) {
+        toast.error("Nie udało się przyjąć zgłoszenia");
+        return false;
+      }
+      const data = await res.json();
+      setAcceptResult({
+        playerName: `${item.childFirstName.trim()} ${item.childLastName.trim()}`,
+        playerCreated: data.playerCreated,
+        parentCreated: data.parentCreated,
+        parentEmail: data.parentEmail,
+        emailSent: data.emailSent,
+        tempPassword: data.tempPassword,
+      });
+      return true;
+    } finally {
+      setAccepting(false);
+    }
   }
 
   async function saveChanges() {
     if (!detailItem) return;
+    const isNewAccept = isAdmin && editStatus === "ACCEPTED" && detailItem.status !== "ACCEPTED";
     const res = await fetch(`/api/recruitment/${detailItem.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: editStatus, adminNotes: editNotes }),
+      // status ACCEPTED ustawia endpoint przyjęcia — tu zapisujemy wtedy tylko notatki
+      body: JSON.stringify(
+        isNewAccept ? { adminNotes: editNotes } : { status: editStatus, adminNotes: editNotes }
+      ),
     });
-    if (res.ok) {
-      toast.success("Zaktualizowano");
+    if (!res.ok) {
+      toast.error("Błąd zapisu");
+      return;
+    }
+    if (isNewAccept && !(await acceptRecruitment(detailItem))) {
+      fetchItems();
+      return;
+    }
+    toast.success("Zaktualizowano");
+    fetchItems();
+    setDetailItem(null);
+  }
+
+  // Dla zgłoszeń przyjętych wcześniej (przed automatem) — uzupełnia zawodnika i konto rodzica
+  async function completeAccepted() {
+    if (!detailItem) return;
+    if (await acceptRecruitment(detailItem)) {
       fetchItems();
       setDetailItem(null);
-    } else {
-      toast.error("Błąd zapisu");
     }
   }
 
@@ -354,6 +442,58 @@ export default function RecruitmentAdminPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {isAdmin && editStatus === "ACCEPTED" && (
+                  <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 space-y-3">
+                    <p className="font-semibold text-sky-900">
+                      {detailItem.status === "ACCEPTED"
+                        ? "Uzupełnij przyjęcie"
+                        : "Przyjęcie do klubu"}
+                    </p>
+                    <p className="text-xs text-sky-900/80">
+                      Dziecko zostanie dodane do zawodników, rodzic dostanie konto
+                      (e-mail z formularza) i zostanie połączony z dzieckiem. Zgody z
+                      formularza trafią na konto rodzica. Jeśli zawodnik lub konto już
+                      istnieją — zostaną użyte, nic się nie zdubluje.
+                    </p>
+                    <div className="space-y-1">
+                      <Label>Dopisz do grup</Label>
+                      {groups.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Brak grup</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                          {groups.map((g) => (
+                            <label key={g.id} className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={selectedGroups.includes(g.id)}
+                                onChange={() => toggleGroup(g.id)}
+                              />
+                              {g.name}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={sendInvite}
+                        onChange={(e) => setSendInvite(e.target.checked)}
+                      />
+                      Wyślij rodzicowi e-mail z danymi logowania
+                    </label>
+                    {detailItem.status === "ACCEPTED" && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled={accepting}
+                        onClick={completeAccepted}
+                      >
+                        {accepting ? "Przetwarzanie..." : "Utwórz zawodnika i konto rodzica"}
+                      </Button>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-1">
                   <Label>Notatki administracyjne</Label>
                   <Textarea
@@ -367,8 +507,56 @@ export default function RecruitmentAdminPage() {
                   <Button variant="outline" onClick={() => setDetailItem(null)}>
                     Zamknij
                   </Button>
-                  <Button onClick={saveChanges}>Zapisz zmiany</Button>
+                  <Button onClick={saveChanges} disabled={accepting}>
+                    {accepting
+                      ? "Przetwarzanie..."
+                      : isAdmin && editStatus === "ACCEPTED" && detailItem.status !== "ACCEPTED"
+                        ? "Przyjmij i utwórz konto"
+                        : "Zapisz zmiany"}
+                  </Button>
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Wynik przyjęcia */}
+      <Dialog open={!!acceptResult} onOpenChange={() => setAcceptResult(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Przyjęto: {acceptResult?.playerName}</DialogTitle>
+          </DialogHeader>
+          {acceptResult && (
+            <div className="space-y-2 text-sm">
+              <ConsentRow
+                label={acceptResult.playerCreated ? "Dodano do zawodników" : "Zawodnik był już w bazie"}
+                ok
+              />
+              <ConsentRow
+                label={
+                  acceptResult.parentCreated
+                    ? `Założono konto rodzica (${acceptResult.parentEmail})`
+                    : `Konto rodzica już istniało (${acceptResult.parentEmail})`
+                }
+                ok
+              />
+              <ConsentRow label="Rodzic połączony z dzieckiem" ok />
+              {acceptResult.parentCreated && (
+                <ConsentRow
+                  label={acceptResult.emailSent ? "Wysłano e-mail z danymi logowania" : "E-mail nie został wysłany"}
+                  ok={acceptResult.emailSent}
+                />
+              )}
+              {acceptResult.tempPassword && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+                  <p className="font-semibold">Przekaż rodzicowi dane logowania:</p>
+                  <p>Login: <strong>{acceptResult.parentEmail}</strong></p>
+                  <p>Hasło tymczasowe: <strong>{acceptResult.tempPassword}</strong></p>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => setAcceptResult(null)}>OK</Button>
               </div>
             </div>
           )}
