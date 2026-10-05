@@ -17,6 +17,8 @@ import {
   UserX,
   AlertTriangle,
   X,
+  FileText,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +76,7 @@ interface Callup {
   transportChoice: string;
   notes: string | null;
   respondedAt: string | null;
+  consentReceivedAt: string | null;
   player: {
     id: string;
     firstName: string;
@@ -82,6 +85,14 @@ interface Callup {
     jerseyNum: number | null;
     category: string;
   };
+}
+
+interface TournamentDocument {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
 }
 
 interface Group {
@@ -451,7 +462,8 @@ function TournamentDetailDialog({
 }: {
   tournamentId: string; onClose: () => void; isAdminOrCoach: boolean; onUpdated: () => void;
 }) {
-  const [tournament, setTournament] = useState<(Tournament & { matches: TournamentMatch[]; callups: Callup[] }) | null>(null);
+  const [tournament, setTournament] = useState<(Tournament & { matches: TournamentMatch[]; callups: Callup[]; documents: TournamentDocument[] }) | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [tab, setTab] = useState<"matches" | "callups">("matches");
   const [matchForm, setMatchForm] = useState({ opponent: "", isHome: true, matchDate: "", notes: "" });
@@ -555,6 +567,49 @@ function TournamentDetailDialog({
     fetchTournament();
   }
 
+  async function toggleConsent(callupId: string, consentReceived: boolean) {
+    const res = await fetch(`/api/tournaments/${tournamentId}/callups`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callupId, consentReceived }),
+    });
+    if (!res.ok) toast.error("Błąd zapisu");
+    fetchTournament();
+  }
+
+  async function uploadDocument(file: File) {
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Plik większy niż 4 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/tournaments/${tournamentId}/documents`, {
+        method: "POST",
+        body: fd,
+      });
+      if (res.ok) {
+        toast.success("Dokument dodany – rodzice powołanych dzieci mogą go pobrać");
+        fetchTournament();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Błąd wgrywania");
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeDocument(docId: string) {
+    const res = await fetch(`/api/tournaments/${tournamentId}/documents/${docId}`, {
+      method: "DELETE",
+    });
+    if (res.ok) fetchTournament();
+    else toast.error("Błąd usuwania");
+  }
+
   async function removeCallup(callupId: string) {
     await fetch(`/api/tournaments/${tournamentId}/callups?callupId=${callupId}`, {
       method: "DELETE",
@@ -623,6 +678,55 @@ function TournamentDetailDialog({
             tournament={tournament}
             onSave={saveTournamentDetails}
           />
+        )}
+
+        {/* Dokumenty dla rodziców powołanych dzieci (np. zgoda do wydruku) */}
+        {isAdminOrCoach && (
+          <div className="border rounded-lg p-3 mb-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium flex items-center gap-1.5">
+                <FileText className="h-4 w-4" /> Dokumenty dla rodziców
+              </p>
+              <label className={cn("inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-accent", uploading && "opacity-50 pointer-events-none")}>
+                <Upload className="h-3.5 w-3.5" />
+                {uploading ? "Wgrywanie..." : "Dodaj plik"}
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadDocument(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {tournament.documents.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Brak dokumentów. Dodaj np. zgodę rodzica (PDF) – rodzice powołanych dzieci pobiorą ją w zakładce Wyjazdy.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {tournament.documents.map((d) => (
+                  <li key={d.id} className="flex items-center gap-2 text-sm">
+                    <a
+                      href={`/api/tournaments/${tournamentId}/documents/${d.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-700 hover:underline truncate"
+                    >
+                      {d.name}
+                    </a>
+                    <span className="text-xs text-muted-foreground">{Math.ceil(d.size / 1024)} KB</span>
+                    <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => removeDocument(d.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
 
         {/* Tabs */}
@@ -771,6 +875,23 @@ function TournamentDetailDialog({
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
+                        {isAdminOrCoach && (
+                          <label
+                            className={cn(
+                              "flex items-center gap-1 text-[11px] font-medium px-1.5 py-1 rounded cursor-pointer",
+                              c.consentReceivedAt ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground"
+                            )}
+                            title="Podpisana zgoda rodzica dostarczona"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!!c.consentReceivedAt}
+                              onChange={(e) => toggleConsent(c.id, e.target.checked)}
+                              className="h-3.5 w-3.5"
+                            />
+                            Zgoda
+                          </label>
+                        )}
                         {isAdminOrCoach ? (
                           <Select
                             value={c.status}
@@ -809,6 +930,9 @@ function TournamentDetailDialog({
                 <span className="text-blue-600">{tournament.callups.filter((c) => c.status === "CALLED").length} oczekujących</span>
                 <span className="text-red-600">{tournament.callups.filter((c) => c.status === "DECLINED").length} odmówiło</span>
                 <span className="text-orange-600">{tournament.callups.filter((c) => c.status === "INJURED").length} kontuzjowanych</span>
+                <span className="text-emerald-700 ml-auto">
+                  zgody: {tournament.callups.filter((c) => c.consentReceivedAt).length}/{tournament.callups.filter((c) => c.status === "CONFIRMED").length} potwierdzonych
+                </span>
               </div>
             )}
 

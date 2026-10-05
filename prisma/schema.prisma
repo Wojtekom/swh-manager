@@ -496,8 +496,25 @@ model Tournament {
   createdBy User              @relation(fields: [createdById], references: [id])
   matches   TournamentMatch[]
   callups   Callup[]
+  documents TournamentDocument[]
 
   @@map("tournaments")
+}
+
+// Dokumenty dla rodziców przy turnieju (np. zgoda do wydruku, regulamin)
+model TournamentDocument {
+  id           String   @id @default(cuid())
+  tournamentId String
+  name         String // nazwa pliku pokazywana rodzicom
+  mimeType     String
+  size         Int
+  data         Bytes
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+  @@map("tournament_documents")
 }
 
 model TournamentMatch {
@@ -525,6 +542,7 @@ model Callup {
   notes           String?
   notifiedAt      DateTime? // kiedy wysłano powiadomienie rodzicowi
   respondedAt     DateTime?
+  consentReceivedAt DateTime? // trener odebrał podpisaną zgodę rodzica
   createdAt       DateTime        @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)

@@ -47,6 +47,10 @@ export async function GET(req: NextRequest) {
           meetingTime: true,
           meetingLocation: true,
           parentDeadline: true,
+          documents: {
+            select: { id: true, name: true, size: true },
+            orderBy: { createdAt: "asc" },
+          },
         },
       },
       player: {

@@ -22,6 +22,7 @@ const updateSchema = z.object({
     .enum(["UNDECIDED", "BUS", "OWN", "NONE"])
     .optional(),
   notes: z.string().optional(),
+  consentReceived: z.boolean().optional(), // trener odebrał podpisaną zgodę
 });
 
 // GET /api/tournaments/[id]/callups
@@ -140,8 +141,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   void params;
-  const { error } = await getSessionOrError();
+  const { session, error } = await getSessionOrError();
   if (error) return error;
+  // Rodzice odpowiadają przez /api/parent/callups/[callupId]/respond
+  const roleError = requireRole(["ADMIN", "COACH"], session!.user.role);
+  if (roleError) return roleError;
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
@@ -149,9 +153,13 @@ export async function PUT(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const updateData: Record<string, unknown> = {
-    respondedAt: new Date(),
-  };
+  const updateData: Record<string, unknown> = {};
+  if (parsed.data.consentReceived !== undefined) {
+    updateData.consentReceivedAt = parsed.data.consentReceived ? new Date() : null;
+  }
+  if (parsed.data.status || parsed.data.transportChoice || parsed.data.notes !== undefined) {
+    updateData.respondedAt = new Date();
+  }
   if (parsed.data.status) updateData.status = parsed.data.status;
   if (parsed.data.transportChoice)
     updateData.transportChoice = parsed.data.transportChoice;

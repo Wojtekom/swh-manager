@@ -25,6 +25,10 @@ export async function GET(
         },
         orderBy: { createdAt: "asc" },
       },
+      documents: {
+        select: { id: true, name: true, mimeType: true, size: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 

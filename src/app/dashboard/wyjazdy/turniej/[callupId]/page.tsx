@@ -11,6 +11,8 @@ import {
   XCircle,
   Clock,
   Trophy,
+  FileText,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +26,7 @@ interface CallupDetail {
   transportChoice: string;
   notes: string | null;
   respondedAt: string | null;
+  consentReceivedAt: string | null;
   tournament: {
     id: string;
     name: string;
@@ -36,6 +39,7 @@ interface CallupDetail {
     meetingTime: string | null;
     meetingLocation: string | null;
     parentDeadline: string | null;
+    documents: { id: string; name: string; size: number }[];
   };
   player: {
     id: string;
@@ -277,6 +281,42 @@ export default function CallupRespondPage() {
             {t.description && (
               <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-700 leading-relaxed border border-slate-100 whitespace-pre-wrap">
                 <strong className="text-slate-900">Opis:</strong> {t.description}
+              </div>
+            )}
+
+            {(t.documents?.length ?? 0) > 0 && (
+              <div className="bg-white rounded-xl p-3 border border-slate-200 space-y-2">
+                <div className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                  <FileText className="h-4 w-4" /> Dokumenty do pobrania
+                </div>
+                <p className="text-xs text-slate-500">
+                  Wydrukuj, podpisz i przekaż trenerowi (np. na treningu).
+                </p>
+                <ul className="space-y-1">
+                  {t.documents.map((d) => (
+                    <li key={d.id}>
+                      <a
+                        href={`/api/tournaments/${t.id}/documents/${d.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-sky-700 font-medium hover:underline"
+                      >
+                        <Download className="h-3.5 w-3.5" /> {d.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <p
+                  className={
+                    callup.consentReceivedAt
+                      ? "text-xs font-semibold text-emerald-700"
+                      : "text-xs text-amber-700"
+                  }
+                >
+                  {callup.consentReceivedAt
+                    ? `✓ Zgoda dostarczona (${new Date(callup.consentReceivedAt).toLocaleDateString("pl-PL")})`
+                    : "Zgoda jeszcze nie dotarła do trenera"}
+                </p>
               </div>
             )}
 
