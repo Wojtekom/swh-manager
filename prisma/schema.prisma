@@ -517,6 +517,22 @@ model TournamentDocument {
   @@map("tournament_documents")
 }
 
+// Podpisana zgoda odesłana przez rodzica (zdjęcie/skan) — jedna na powołanie
+model CallupConsentFile {
+  id           String   @id @default(cuid())
+  callupId     String   @unique
+  name         String
+  mimeType     String
+  size         Int
+  data         Bytes
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  callup Callup @relation(fields: [callupId], references: [id], onDelete: Cascade)
+
+  @@map("callup_consent_files")
+}
+
 model TournamentMatch {
   id            String   @id @default(cuid())
   tournamentId  String
@@ -543,10 +559,12 @@ model Callup {
   notifiedAt      DateTime? // kiedy wysłano powiadomienie rodzicowi
   respondedAt     DateTime?
   consentReceivedAt DateTime? // trener odebrał podpisaną zgodę rodzica
+  documentsSentAt DateTime? // ostatnia wysyłka dokumentów mailem do rodziców
   createdAt       DateTime        @default(now())
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tournament  Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player      Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  consentFile CallupConsentFile?
 
   @@unique([tournamentId, playerId])
   @@map("callups")

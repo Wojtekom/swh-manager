@@ -19,7 +19,10 @@ import {
   X,
   FileText,
   Upload,
+  Mail,
+  Paperclip,
 } from "lucide-react";
+import { SendDocumentsDialog, LinkParentDialog } from "@/components/tournament-parent-tools";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +80,7 @@ interface Callup {
   notes: string | null;
   respondedAt: string | null;
   consentReceivedAt: string | null;
+  consentFile: { name: string; createdAt: string } | null;
   player: {
     id: string;
     firstName: string;
@@ -84,6 +88,7 @@ interface Callup {
     position: string | null;
     jerseyNum: number | null;
     category: string;
+    parents: { parent: { name: string; email: string; active: boolean } }[];
   };
 }
 
@@ -470,6 +475,8 @@ function TournamentDetailDialog({
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [addingCallups, setAddingCallups] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
+  const [sendOpen, setSendOpen] = useState(false);
+  const [linkPlayer, setLinkPlayer] = useState<{ id: string; name: string } | null>(null);
 
   const fetchTournament = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}`);
@@ -687,6 +694,15 @@ function TournamentDetailDialog({
               <p className="text-sm font-medium flex items-center gap-1.5">
                 <FileText className="h-4 w-4" /> Dokumenty dla rodziców
               </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto h-7 text-xs"
+                disabled={tournament.callups.length === 0}
+                onClick={() => setSendOpen(true)}
+              >
+                <Mail className="h-3.5 w-3.5 mr-1" /> Wyślij rodzicom
+              </Button>
               <label className={cn("inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-accent", uploading && "opacity-50 pointer-events-none")}>
                 <Upload className="h-3.5 w-3.5" />
                 {uploading ? "Wgrywanie..." : "Dodaj plik"}
@@ -873,6 +889,33 @@ function TournamentDetailDialog({
                           )}
                           {c.notes && <span className="italic text-muted-foreground/70">{`„${c.notes}"`}</span>}
                         </p>
+                        {isAdminOrCoach && (
+                          <p className="text-xs flex items-center gap-2 mt-0.5">
+                            {c.player.parents.some((pp) => pp.parent.active) ? (
+                              <span className="text-muted-foreground truncate">
+                                Rodzic: {c.player.parents.filter((pp) => pp.parent.active).map((pp) => pp.parent.name).join(", ")}
+                              </span>
+                            ) : (
+                              <span className="text-amber-700 font-medium">⚠️ brak konta rodzica</span>
+                            )}
+                            <button
+                              className="text-sky-700 hover:underline"
+                              onClick={() => setLinkPlayer({ id: c.player.id, name: `${c.player.firstName} ${c.player.lastName}` })}
+                            >
+                              {c.player.parents.length ? "zmień" : "połącz"}
+                            </button>
+                            {c.consentFile && (
+                              <a
+                                href={`/api/callups/${c.id}/consent-file`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-0.5 text-emerald-700 hover:underline"
+                              >
+                                <Paperclip className="h-3 w-3" /> zgoda od rodzica
+                              </a>
+                            )}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {isAdminOrCoach && (
@@ -1045,6 +1088,21 @@ function TournamentDetailDialog({
               </div>
             )}
           </div>
+        )}
+        {sendOpen && (
+          <SendDocumentsDialog
+            tournamentId={tournamentId}
+            onClose={() => setSendOpen(false)}
+            onSent={fetchTournament}
+          />
+        )}
+        {linkPlayer && (
+          <LinkParentDialog
+            playerId={linkPlayer.id}
+            playerName={linkPlayer.name}
+            onClose={() => setLinkPlayer(null)}
+            onLinked={fetchTournament}
+          />
         )}
       </DialogContent>
     </Dialog>

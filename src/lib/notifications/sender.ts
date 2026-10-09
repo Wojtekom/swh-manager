@@ -3,6 +3,7 @@ import { isDemoUser } from "./config";
 import { sendEmail } from "./channels/email";
 import { sendPushNotification } from "./channels/push";
 import { sendSms } from "./channels/sms";
+import { getAppUrl } from "../app-url";
 
 interface NotificationPayload {
   userId: string;
@@ -90,7 +91,7 @@ export async function sendNotification(
             <p style="color:#334155;">${body}</p>
             ${
               link
-                ? `<a href="${process.env.NEXTAUTH_URL || ""}${link}" style="display:inline-block;padding:10px 20px;background:#38bdf8;color:white;border-radius:8px;text-decoration:none;margin-top:10px;">Otwórz w aplikacji</a>`
+                ? `<a href="${getAppUrl()}${link}" style="display:inline-block;padding:10px 20px;background:#38bdf8;color:white;border-radius:8px;text-decoration:none;margin-top:10px;">Otwórz w aplikacji</a>`
                 : ""
             }
           </div>

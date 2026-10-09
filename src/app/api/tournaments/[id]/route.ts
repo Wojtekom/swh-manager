@@ -20,8 +20,16 @@ export async function GET(
       callups: {
         include: {
           player: {
-            select: { id: true, firstName: true, lastName: true, position: true, jerseyNum: true },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              position: true,
+              jerseyNum: true,
+              parents: { select: { parent: { select: { name: true, email: true, active: true } } } },
+            },
           },
+          consentFile: { select: { name: true, createdAt: true } },
         },
         orderBy: { createdAt: "asc" },
       },

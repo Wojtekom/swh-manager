@@ -13,6 +13,7 @@ import {
   Trophy,
   FileText,
   Download,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +28,7 @@ interface CallupDetail {
   notes: string | null;
   respondedAt: string | null;
   consentReceivedAt: string | null;
+  consentFile: { name: string; createdAt: string } | null;
   tournament: {
     id: string;
     name: string;
@@ -59,6 +61,7 @@ export default function CallupRespondPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [notes, setNotes] = useState("");
+  const [uploadingConsent, setUploadingConsent] = useState(false);
 
   const fetchCallup = useCallback(async () => {
     try {
@@ -113,6 +116,31 @@ export default function CallupRespondPage() {
       toast.error("Błąd sieci");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function uploadConsent(original: File) {
+    setUploadingConsent(true);
+    try {
+      const file = await shrinkImage(original);
+      if (file.size > 4 * 1024 * 1024) {
+        toast.error("Plik za duży (maks. 4 MB)");
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/callups/${callupId}/consent-file`, { method: "POST", body: fd });
+      if (res.ok) {
+        toast.success("Dziękujemy! Zgoda przesłana do trenera");
+        fetchCallup();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Nie udało się przesłać");
+      }
+    } catch {
+      toast.error("Nie udało się odczytać zdjęcia – spróbuj zrobić je jeszcze raz");
+    } finally {
+      setUploadingConsent(false);
     }
   }
 
@@ -290,7 +318,8 @@ export default function CallupRespondPage() {
                   <FileText className="h-4 w-4" /> Dokumenty do pobrania
                 </div>
                 <p className="text-xs text-slate-500">
-                  Wydrukuj, podpisz i przekaż trenerowi (np. na treningu).
+                  Wydrukuj i podpisz zgodę. Potem zrób telefonem zdjęcie i prześlij je
+                  poniżej – albo przekaż kartkę trenerowi na treningu.
                 </p>
                 <ul className="space-y-1">
                   {t.documents.map((d) => (
@@ -317,6 +346,36 @@ export default function CallupRespondPage() {
                     ? `✓ Zgoda dostarczona (${new Date(callup.consentReceivedAt).toLocaleDateString("pl-PL")})`
                     : "Zgoda jeszcze nie dotarła do trenera"}
                 </p>
+                {callup.consentFile && (
+                  <a
+                    href={`/api/callups/${callupId}/consent-file`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-sky-700 hover:underline"
+                  >
+                    Zobacz przesłane zdjęcie zgody
+                  </a>
+                )}
+                <label
+                  className={`flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-sky-300 bg-sky-50 py-3 text-sm font-semibold text-sky-800 cursor-pointer active:bg-sky-100 ${uploadingConsent ? "opacity-50 pointer-events-none" : ""}`}
+                >
+                  <Camera className="h-4 w-4" />
+                  {uploadingConsent
+                    ? "Przesyłanie…"
+                    : callup.consentFile
+                      ? "Prześlij zgodę ponownie"
+                      : "Prześlij podpisaną zgodę"}
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadConsent(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
               </div>
             )}
 
@@ -410,4 +469,21 @@ export default function CallupRespondPage() {
       </div>
     </div>
   );
+}
+
+// Zdjęcie z telefonu bywa > 4 MB i w formacie HEIC — zmniejszamy do JPEG (dłuższy bok 2000 px)
+async function shrinkImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") && file.type !== "") return file;
+  if (file.type === "image/jpeg" && file.size < 1.5 * 1024 * 1024) return file;
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob: Blob = await new Promise((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("toBlob"))), "image/jpeg", 0.85)
+  );
+  const name = (file.name || "zgoda").replace(/.[^.]+$/, "") + ".jpg";
+  return new File([blob], name, { type: "image/jpeg" });
 }

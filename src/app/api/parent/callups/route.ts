@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
           category: true,
         },
       },
+      consentFile: { select: { name: true, createdAt: true } },
     },
     orderBy: { tournament: { startDate: "asc" } },
   });

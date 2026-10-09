@@ -4,11 +4,17 @@ import {
   isServiceConfigured,
 } from "../config";
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+}
+
 export async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  userId?: string
+  userId?: string,
+  attachments?: EmailAttachment[]
 ): Promise<void> {
   if (userId && isDemoUser(userId)) {
     console.log(`[DEMO EMAIL] To: ${to}, Subject: ${subject}`);
@@ -33,6 +39,14 @@ export async function sendEmail(
       to: [to],
       subject,
       html,
+      ...(attachments?.length
+        ? {
+            attachments: attachments.map((a) => ({
+              filename: a.filename,
+              content: a.content.toString("base64"),
+            })),
+          }
+        : {}),
     }),
   });
 

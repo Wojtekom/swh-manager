@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { sendEmail } from "@/lib/notifications/channels/email";
+import { getAppUrl } from "@/lib/app-url";
 
 // Hasło tymczasowe dla nowego konta rodzica
 export function generateTempPassword() {
@@ -20,7 +21,7 @@ export async function sendInvitationEmail(params: {
   userId: string;
 }) {
   const { email, parentName, playerName, tempPassword, userId } = params;
-  const appUrl = process.env.NEXTAUTH_URL || "https://swh-manager.vercel.app";
+  const appUrl = getAppUrl();
 
   await sendEmail(
     email,
