@@ -74,59 +74,15 @@ export async function sendTournamentDocuments(tournamentId: string, mode: Mailin
   });
   const attachments = docs.map((d) => ({ filename: d.name, content: Buffer.from(d.data) }));
 
-  const appUrl = getAppUrl();
-  const dateStr = new Date(t.startDate).toLocaleDateString("pl-PL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "Europe/Warsaw",
-  });
-  const deadlineStr = t.parentDeadline
-    ? new Date(t.parentDeadline).toLocaleDateString("pl-PL", {
-        day: "numeric",
-        month: "long",
-        timeZone: "Europe/Warsaw",
-      })
-    : null;
-
   let sent = 0;
   const failed: string[] = [];
 
   for (const r of recipients) {
-    const link = `${appUrl}/dashboard/wyjazdy/turniej/${r.callupId}`;
-    const needsAnswer = r.status === "CALLED";
-    const title = `${t.name} – ${r.player}`;
-
-    const steps: string[] = [];
-    if (needsAnswer) steps.push("Potwierdź w aplikacji, czy dziecko jedzie.");
-    if (attachments.length > 0 && !r.consentReceived) {
-      steps.push("Wydrukuj zgodę z załącznika i podpisz ją.");
-      steps.push(
-        "Zrób telefonem zdjęcie podpisanej zgody i prześlij je w aplikacji (przycisk „Prześlij podpisaną zgodę”) – albo przekaż ją trenerowi na treningu."
-      );
-    }
-
-    const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-      <div style="background:linear-gradient(135deg,#38bdf8,#3b82f6);padding:20px;border-radius:12px 12px 0 0;">
-        <h2 style="color:white;margin:0;">🏒 SWH Gwardia Siedlce</h2>
-      </div>
-      <div style="padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;color:#334155;">
-        <h3 style="color:#0c4a6e;margin-top:0;">${escapeHtml(t.name)}</h3>
-        <p><strong>Zawodnik:</strong> ${escapeHtml(r.player)}<br/>
-        <strong>Kiedy:</strong> ${dateStr}<br/>
-        <strong>Gdzie:</strong> ${escapeHtml(t.location)}
-        ${deadlineStr ? `<br/><strong>Prosimy o odpowiedź do:</strong> ${deadlineStr}` : ""}</p>
-        ${attachments.length > 0 ? `<p>W załączniku: ${attachments.map((a) => escapeHtml(a.filename)).join(", ")}.</p>` : ""}
-        ${steps.length > 0 ? `<p><strong>Co trzeba zrobić:</strong></p><ol>${steps.map((s) => `<li>${s}</li>`).join("")}</ol>` : "<p>Dziękujemy – mamy już Państwa odpowiedź i zgodę.</p>"}
-        <a href="${link}" style="display:inline-block;padding:12px 22px;background:#38bdf8;color:white;border-radius:8px;text-decoration:none;font-weight:bold;">Otwórz powołanie w aplikacji</a>
-        <p style="font-size:12px;color:#64748b;margin-top:16px;">Nie pamiętasz hasła? Odpowiedz na tę wiadomość albo zapytaj trenera.</p>
-      </div>
-    </div>`;
+    const { subject, title, html, steps } = buildParentMail(t, r, attachments);
 
     for (const parent of r.parents) {
       try {
-        await sendEmail(parent.email, `SWH: ${title}`, html, parent.id, attachments);
+        await sendEmail(parent.email, subject, html, parent.id, attachments);
         await prisma.notification.create({
           data: {
             userId: parent.id,
@@ -154,4 +110,60 @@ export async function sendTournamentDocuments(tournamentId: string, mode: Mailin
   }
 
   return { sent, failed, withoutParent };
+}
+
+type MailTournament = { name: string; location: string; startDate: Date; parentDeadline: Date | null };
+
+// Treść maila do rodzica dla jednego powołania (używana też do maila próbnego)
+export function buildParentMail(
+  t: MailTournament,
+  r: { callupId: string; player: string; status: string; consentReceived: boolean },
+  attachments: { filename: string }[]
+) {
+  const appUrl = getAppUrl();
+  const dateStr = new Date(t.startDate).toLocaleDateString("pl-PL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Warsaw",
+  });
+  const deadlineStr = t.parentDeadline
+    ? new Date(t.parentDeadline).toLocaleDateString("pl-PL", {
+        day: "numeric",
+        month: "long",
+        timeZone: "Europe/Warsaw",
+      })
+    : null;
+
+  const link = `${appUrl}/dashboard/wyjazdy/turniej/${r.callupId}`;
+  const needsAnswer = r.status === "CALLED";
+  const title = `${t.name} – ${r.player}`;
+
+  const steps: string[] = [];
+  if (needsAnswer) steps.push("Potwierdź w aplikacji, czy dziecko jedzie.");
+  if (attachments.length > 0 && !r.consentReceived) {
+    steps.push("Wydrukuj zgodę z załącznika i podpisz ją.");
+    steps.push(
+      "Zrób telefonem zdjęcie podpisanej zgody i prześlij je w aplikacji (przycisk „Prześlij podpisaną zgodę”) – albo przekaż ją trenerowi na treningu."
+    );
+  }
+
+  const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+    <div style="background:linear-gradient(135deg,#38bdf8,#3b82f6);padding:20px;border-radius:12px 12px 0 0;">
+      <h2 style="color:white;margin:0;">🏒 SWH Gwardia Siedlce</h2>
+    </div>
+    <div style="padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;color:#334155;">
+      <h3 style="color:#0c4a6e;margin-top:0;">${escapeHtml(t.name)}</h3>
+      <p><strong>Zawodnik:</strong> ${escapeHtml(r.player)}<br/>
+      <strong>Kiedy:</strong> ${dateStr}<br/>
+      <strong>Gdzie:</strong> ${escapeHtml(t.location)}
+      ${deadlineStr ? `<br/><strong>Prosimy o odpowiedź do:</strong> ${deadlineStr}` : ""}</p>
+      ${attachments.length > 0 ? `<p>W załączniku: ${attachments.map((a) => escapeHtml(a.filename)).join(", ")}.</p>` : ""}
+      ${steps.length > 0 ? `<p><strong>Co trzeba zrobić:</strong></p><ol>${steps.map((s) => `<li>${s}</li>`).join("")}</ol>` : "<p>Dziękujemy – mamy już Państwa odpowiedź i zgodę.</p>"}
+      <a href="${link}" style="display:inline-block;padding:12px 22px;background:#38bdf8;color:white;border-radius:8px;text-decoration:none;font-weight:bold;">Otwórz powołanie w aplikacji</a>
+      <p style="font-size:12px;color:#64748b;margin-top:16px;">Nie pamiętasz hasła? Napisz na zarzadswh@halalodowa.siedlce.pl albo zapytaj trenera.</p>
+    </div>
+  </div>`;
+  return { subject: `SWH: ${title}`, title, html, steps };
 }
