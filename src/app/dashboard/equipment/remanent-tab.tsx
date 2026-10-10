@@ -271,7 +271,7 @@ export function RemanentTab({
                           <Input
                             id={`sz-${k}`}
                             defaultValue={size.startsWith("nowy ") ? "" : size}
-                            placeholder={cat.key === "lyzwy" ? "np. 30" : "rozmiar"}
+                            placeholder={cat.key.endsWith("lyzwy") ? "np. 30" : "rozmiar"}
                             className="h-9 font-semibold"
                             onBlur={(e) => {
                               const v = e.target.value.trim();
@@ -338,7 +338,7 @@ export function RemanentTab({
                   onClick={() => addSize(cat.key)}
                 >
                   <Plus className="inline h-3.5 w-3.5 mr-1" />
-                  {cat.key === "lyzwy" ? "Dodaj rozmiar łyżew" : "Dodaj inny rozmiar / model"}
+                  {cat.key.endsWith("lyzwy") ? "Dodaj rozmiar łyżew" : "Dodaj inny rozmiar / model"}
                 </button>
               </div>
             );
