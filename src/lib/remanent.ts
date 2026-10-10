@@ -1,5 +1,6 @@
 // Układ karty remanentu — ten sam co na papierowej karcie (Downloads\SWH_Remanent_Sprzetu_2026).
 // Każdy wiersz karty to jeden rekord Equipment: kategoria + nazwa + rozmiar.
+// Kije: rozmiar + chwyt, L = lewy, P = prawy (np. "JR L").
 
 export type EquipmentCategoryKey =
   | "HELMET" | "SKATES" | "STICK" | "GLOVES" | "PADS" | "JERSEY" | "PANTS" | "BAG"
@@ -20,7 +21,7 @@ export const REMANENT_CATS: RemanentCat[] = [
   { key: "lokcie", label: "Ochraniacze łokci", category: "PADS", name: "Ochraniacze łokci", sizes: ["YTH", "JR S", "JR M", "JR L", "SR"] },
   { key: "nagolenniki", label: "Nagolenniki", category: "PADS", name: "Nagolenniki", sizes: ['8"', '9"', '10"', '11"', '12"', '13"+'] },
   { key: "spodnie", label: "Spodnie hokejowe", category: "PANTS", name: "Spodnie hokejowe", sizes: ["YTH", "JR S", "JR M", "JR L", "SR"] },
-  { key: "kij", label: "Kije", category: "STICK", name: "Kij", sizes: ["YTH", "JR", "INT", "SR"] },
+  { key: "kij", label: "Kije", category: "STICK", name: "Kij", sizes: ["YTH L", "YTH P", "JR L", "JR P", "INT L", "INT P", "SR L", "SR P"] },
   { key: "lyzwy", label: "Łyżwy", category: "SKATES", name: "Łyżwy", sizes: [] },
   { key: "szyja", label: "Ochraniacze szyi / suspensoria", category: "NECK_GUARD", name: "Ochraniacz szyi", sizes: ["YTH", "JR", "SR"] },
   { key: "zestaw", label: "Zestawy startowe dziecięce (komplet)", category: "OTHER", name: "Zestaw startowy dziecięcy", sizes: ["komplet"] },
@@ -34,7 +35,7 @@ export const REMANENT_CATS: RemanentCat[] = [
   { key: "br_krocze", label: "Bramkarz – ochraniacz krocza", category: "GOALIE_GEAR", name: "Ochraniacz krocza bramkarski", sizes: ["YTH","JR","INT","SR"] },
   { key: "br_szyja", label: "Bramkarz – ochraniacz szyi", category: "GOALIE_GEAR", name: "Ochraniacz szyi bramkarski", sizes: ["YTH","JR","INT","SR"] },
   { key: "br_maska", label: "Bramkarz – maska", category: "GOALIE_GEAR", name: "Maska bramkarska", sizes: ["YTH","JR","INT","SR"] },
-  { key: "br_kij", label: "Bramkarz – kij bramkarski", category: "GOALIE_GEAR", name: "Kij bramkarski", sizes: ["YTH","JR","INT","SR"] },
+  { key: "br_kij", label: "Bramkarz – kij bramkarski", category: "GOALIE_GEAR", name: "Kij bramkarski", sizes: ["YTH L","YTH P","JR L","JR P","INT L","INT P","SR L","SR P"] },
   { key: "krazki", label: "Krążki", category: "TRAINING_AID", name: "Krążki", sizes: ["lód", "in-line"] },
   { key: "pomoce", label: "Pachołki, płotki, drabinki, inne pomoce", category: "TRAINING_AID", name: "Pomoce treningowe", sizes: ["—"] },
 ];

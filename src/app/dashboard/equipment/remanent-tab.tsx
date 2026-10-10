@@ -226,7 +226,7 @@ export function RemanentTab({
         <p className="text-muted-foreground">
           Wpisz, ile sztuk <b>leży w magazynie</b>, zaznacz, co <b>dzieci mają z klubu</b>, i dopisz <b>braki</b>. Wpisy
           zapamiętują się na tym urządzeniu; do SWH Managera trafiają po kliknięciu „Zapisz remanent”. Stan: N nowy · D dobry ·
-          Ś średni · Z zużyty · U uszkodzony.
+          Ś średni · Z zużyty · U uszkodzony. Kije: L – lewy, P – prawy chwyt.
         </p>
       </div>
 
