@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { RemanentTab } from "./remanent-tab";
 
 interface ActiveLoan {
   id: string;
@@ -78,6 +79,8 @@ interface Player {
   firstName: string;
   lastName: string;
   category: string;
+  dateOfBirth?: string | null;
+  status?: string;
 }
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -126,7 +129,7 @@ export default function EquipmentPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"inventory" | "loans" | "history">("inventory");
+  const [tab, setTab] = useState<"inventory" | "loans" | "history" | "remanent">("inventory");
   const [createOpen, setCreateOpen] = useState(false);
   const [loanOpen, setLoanOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState("ALL");
@@ -248,6 +251,7 @@ export default function EquipmentPage() {
           { key: "inventory", label: `Magazyn (${equipment.length})` },
           { key: "loans", label: `Wypożyczenia (${activeLoans.length})` },
           { key: "history", label: `Historia (${returnedLoans.length})` },
+          ...(isAdminOrCoach ? [{ key: "remanent", label: "Remanent" }] : []),
         ].map((t) => (
           <button
             key={t.key}
@@ -261,6 +265,10 @@ export default function EquipmentPage() {
           </button>
         ))}
       </div>
+
+      {tab === "remanent" && isAdminOrCoach && (
+        <RemanentTab equipment={equipment} loans={loans} players={players} onSaved={fetchData} />
+      )}
 
       {/* MAGAZYN */}
       {tab === "inventory" && (
