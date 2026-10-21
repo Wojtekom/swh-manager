@@ -84,6 +84,8 @@ export default function ImportPaymentsPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      // Tryb: "preview" niczego nie zapisuje, "import" rozlicza należności z kodem SWH-XXXXXX
+      formData.append("mode", mode);
 
       // W trybie import dodaj feeId
       if (mode === "import" && selectedFeeId) {

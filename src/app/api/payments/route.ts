@@ -72,17 +72,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Składka nie istnieje" }, { status: 404 });
     }
 
+    // Nie naliczaj drugi raz tej samej składki z tym samym terminem
+    const due = parsed.data.dueDate;
+    const dayStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
+    const existing = await prisma.payment.findMany({
+      where: {
+        feeId: parsed.data.feeId,
+        playerId: { in: parsed.data.playerIds },
+        dueDate: { gte: dayStart, lt: dayEnd },
+      },
+      select: { playerId: true },
+    });
+    const skip = new Set(existing.map((e) => e.playerId));
+    const toCreate = parsed.data.playerIds.filter((pid) => !skip.has(pid));
+
     const created = await prisma.payment.createMany({
-      data: parsed.data.playerIds.map((pid) => ({
+      data: toCreate.map((pid) => ({
         playerId: pid,
         feeId: parsed.data.feeId,
         amount: fee.amount,
-        dueDate: parsed.data.dueDate,
+        dueDate: due,
         status: "PENDING" as const,
       })),
     });
 
-    return NextResponse.json({ message: `Naliczono ${created.count} płatności` }, { status: 201 });
+    return NextResponse.json(
+      {
+        message:
+          `Naliczono ${created.count} płatności` +
+          (skip.size ? ` (pominięto ${skip.size} – już naliczone z tym terminem)` : ""),
+      },
+      { status: 201 }
+    );
   }
 
   // Single payment

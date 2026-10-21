@@ -42,6 +42,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TransferInfo } from "@/components/payments/transfer-info";
+import { paymentReference } from "@/lib/payments";
+import { AssignDialog } from "@/components/payments/assign-dialog";
 
 interface Fee {
   id: string;
@@ -95,6 +98,7 @@ export default function PaymentsPage() {
   const [editingFee, setEditingFee] = useState<Fee | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -132,6 +136,11 @@ export default function PaymentsPage() {
     .filter((p) => p.status === "OVERDUE" || p.status === "PENDING")
     .reduce((s, p) => s + p.amount, 0);
 
+  // Rodzic: należności do zapłacenia (z danymi do przelewu i kodem QR)
+  const toPay = payments
+    .filter((p) => p.status === "PENDING" || p.status === "OVERDUE" || p.status === "PARTIAL")
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -141,6 +150,10 @@ export default function PaymentsPage() {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
+            <Button size="sm" onClick={() => setAssignOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nalicz należność
+            </Button>
             <Button
               variant={tab === "payments" ? "default" : "outline"}
               size="sm"
@@ -204,6 +217,42 @@ export default function PaymentsPage() {
         </Card>
       </div>
 
+      {/* Rodzic: jak zapłacić */}
+      {!isAdmin && !loading && toPay.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Do zapłaty</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {toPay.map((p) => {
+              const left = p.amount - (p.paidAmount || 0);
+              const st = STATUS_MAP[p.status] || STATUS_MAP.PENDING;
+              return (
+                <div key={p.id} className="space-y-3 border-b pb-6 last:border-0 last:pb-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">
+                      {p.player.firstName} {p.player.lastName} – {p.fee.name}
+                    </span>
+                    <Badge variant={st.variant} className="gap-1">
+                      {st.icon}
+                      {st.label}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      termin: {new Date(p.dueDate).toLocaleDateString("pl-PL")}
+                    </span>
+                  </div>
+                  <TransferInfo
+                    paymentId={p.id}
+                    playerName={`${p.player.firstName} ${p.player.lastName}`}
+                    amount={left}
+                  />
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payments Tab */}
       {tab === "payments" && (
         <Card>
@@ -261,6 +310,11 @@ export default function PaymentsPage() {
                         <TableRow key={p.id}>
                           <TableCell className="font-medium">
                             {p.player.lastName} {p.player.firstName}
+                            {isAdmin && (
+                              <span className="block text-xs font-normal text-muted-foreground">
+                                {paymentReference(p.id)}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">{p.player.category}</Badge>
@@ -386,6 +440,14 @@ export default function PaymentsPage() {
         open={feeDialogOpen}
         onClose={() => setFeeDialogOpen(false)}
         fee={editingFee}
+        onSaved={fetchData}
+      />
+
+      {/* Naliczanie należności wybranym zawodnikom */}
+      <AssignDialog
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        fees={fees.filter((f) => f.active)}
         onSaved={fetchData}
       />
 

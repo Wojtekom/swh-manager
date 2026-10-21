@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionOrError } from "@/lib/auth-helpers";
+import { PAYMENT_REFERENCE_REGEX } from "@/lib/payments";
 
 // Santander CSV format (no header row, first row is export metadata):
 // Col 0: Data operacji (DD-MM-YYYY or YYYY-MM-DD)
@@ -108,6 +109,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const feeId = formData.get("feeId") as string | null;
+    const commit = formData.get("mode") === "import";
 
     if (!file) {
       return NextResponse.json({ error: "Brak pliku" }, { status: 400 });
@@ -128,6 +130,7 @@ export async function POST(req: NextRequest) {
       unmatched: 0,
       skippedNegative: 0,
       created: 0,
+      settled: 0, // rozliczone naliczone należności (po kodzie SWH-XXXXXX)
       errors: [] as string[],
     };
 
@@ -169,7 +172,45 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Try to match player
+      // 1) Kod płatności w tytule (SWH-XXXXXX) → rozlicz konkretną naliczoną należność
+      const codeMatch = title.match(PAYMENT_REFERENCE_REGEX);
+      if (codeMatch) {
+        const open = await prisma.payment.findFirst({
+          where: {
+            id: { endsWith: codeMatch[1].toLowerCase() },
+            status: { in: ["PENDING", "OVERDUE", "PARTIAL"] },
+          },
+          include: { player: { select: { id: true, firstName: true, lastName: true } } },
+        });
+        if (open) {
+          if (commit) {
+            const paid = (open.paidAmount || 0) + amount;
+            await prisma.payment.update({
+              where: { id: open.id },
+              data: {
+                paidAmount: paid,
+                paidDate: date,
+                status: paid + 0.005 >= open.amount ? "PAID" : "PARTIAL",
+                notes: [open.notes, `Import bankowy: ${title}`].filter(Boolean).join(" | "),
+              },
+            });
+            stats.settled++;
+          }
+          stats.matched++;
+          results.push({
+            date: fields[0],
+            title,
+            sender,
+            amount,
+            playerName: `${open.player.firstName} ${open.player.lastName}`,
+            playerId: open.player.id,
+            status: "matched",
+          });
+          continue;
+        }
+      }
+
+      // 2) Dopasowanie po imieniu i nazwisku (tytuł lub nadawca)
       const player = findPlayerMatch(title, players) || findPlayerMatch(sender, players);
 
       if (player) {
