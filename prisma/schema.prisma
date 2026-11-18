@@ -179,8 +179,71 @@ model Player {
   skillAssessments  PlayerSkillAssessment[]
   fitnessTests      PlayerFitnessTest[]
   fitnessResults    FitnessTestResult[]
+  volunteerAgreements VolunteerAgreement[]
 
   @@map("players")
+}
+
+// ==================== WOLONTARIAT ZAWODNIKÓW ====================
+// Porozumienie o wykonywaniu świadczeń wolontariusza (SWH – starszy zawodnik),
+// akceptowane elektronicznie przez rodzica i dziecko, zatwierdzane przez zarząd.
+
+enum VolunteerAgreementStatus {
+  SENT          // wysłane do rodzica, czeka na podpis
+  PARENT_SIGNED // podpisane przez rodzica i dziecko, czeka na zarząd
+  ACTIVE        // zatwierdzone przez zarząd
+  ENDED         // zakończone
+  CANCELLED     // anulowane
+}
+
+model VolunteerAgreement {
+  id         String                   @id @default(cuid())
+  number     String                   @unique // np. "1/2027"
+  playerId   String
+  periodFrom DateTime
+  periodTo   DateTime
+  maxHours   Int?
+  status     VolunteerAgreementStatus @default(SENT)
+
+  school              String?
+  childSignature      String? // imię i nazwisko wpisane przez dziecko
+  childAcceptedAt     DateTime?
+  parentId            String? // User (rodzic), który podpisał
+  parentSignature     String? // imię i nazwisko wpisane przez rodzica
+  parentAcceptedAt    DateTime?
+  parentIp            String?
+  boardApprovedAt     DateTime?
+  boardApprovedBy     String? // imię i nazwisko zatwierdzającego
+  certificateIssuedAt DateTime?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  player Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  hours  VolunteerHour[]
+
+  @@index([playerId])
+  @@map("volunteer_agreements")
+}
+
+model VolunteerHour {
+  id          String   @id @default(cuid())
+  agreementId String
+  date        DateTime
+  eventType   String // trening / turniej / nabór / inne
+  tasks       String
+  timeFrom    String?
+  timeTo      String?
+  hours       Float
+  coachName   String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  agreement VolunteerAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+
+  @@index([agreementId])
+  @@map("volunteer_hours")
 }
 
 // Rodzic <-> Zawodnik (wiele do wielu)

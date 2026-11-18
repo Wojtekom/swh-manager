@@ -30,6 +30,7 @@ import {
   FileText,
   ListTodo,
   GraduationCap,
+  HandHeart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/tournaments", label: "Turnieje", icon: Trophy, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/camps", label: "Obozy", icon: Tent, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/wyjazdy", label: "Wyjazdy", icon: Bus, roles: ["PARENT"] },
+  { href: "/dashboard/wolontariat", label: "Wolontariat", icon: HandHeart, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/training", label: "Szkolenie", icon: BookOpen, roles: ["ADMIN", "COACH", "PARENT"] },
   { href: "/dashboard/karta-rozwoju", label: "Karty Rozwoju", icon: ClipboardList, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/test-rolkarza", label: "Test Rolkarza", icon: Timer, roles: ["ADMIN", "COACH"] },
